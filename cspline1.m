@@ -47,9 +47,6 @@ function [Mtc, lambda] = cspline1(y)
 	opts   = optimset('TolX', 1e-16, 'Display', 'on');
 	sigma  = fminbnd(@iterate, 0, 1);
 	lambda = sigma^2/(1-sigma^2);
-
-	%% Ensure that the final value of c is using the optimal lambda
-	%gcv = iterate(sigma)
 	
 	%% Store the output in c and return
 	Mtc = y - Mtc;
@@ -200,8 +197,8 @@ function gcv = iterate(sigma)
 	h1 = h;
 	
 	% Real loop, above the limit
-	Nback_lim = max([Nlim, Nback]);
-	for i = (Nw-2):-1:Nback_lim
+	Nback_lim = min([Nw-2, max([Nlim, Nback])]);
+	for i = (Nw-2):-1:(Nback_lim+1)
 		c = theta(i) + e(Nlim) * c1 - f(Nlim) * c2;
 		Mtc(i+2) = Mtc(i+2) + c;
 		Mtc(i+1) = Mtc(i+1) - 2*c;
@@ -221,7 +218,7 @@ function gcv = iterate(sigma)
 	end
 
 	% Under the limit
-	for i = (Nback_lim-1):-1:Nback
+	for i = Nback_lim:-1:(Nback+1)
 		c = theta(i) + e(i) * c1 - f(i) * c2;
 		Mtc(i+2) = Mtc(i+2) + c;
 		Mtc(i+1) = Mtc(i+1) - 2*c;
@@ -242,7 +239,7 @@ function gcv = iterate(sigma)
 
 	% Finish computing Mtc
 	Nback_lim2 = min([Nlim, Nback]);
-	for i = (Nback-1):-1:Nback_lim2
+	for i = Nback:-1:(Nback_lim2+1)
 		c = theta(i) + e(Nlim) * c1 - f(Nlim) * c2;
 		Mtc(i+2) = Mtc(i+2) + c;
 		Mtc(i+1) = Mtc(i+1) - 2*c;
@@ -252,7 +249,7 @@ function gcv = iterate(sigma)
 
 		c2 = c1; c1 = c;
 	end
-	for i = (Nback_lim2-1):-1:1
+	for i = Nback_lim2:-1:1
 		c = theta(i) + e(i) * c1 - f(i) * c2;
 		Mtc(i+2) = Mtc(i+2) + c;
 		Mtc(i+1) = Mtc(i+1) - 2*c;
