@@ -101,9 +101,7 @@ function gcv = iterate(sigma)
 	f(1)  = 1/d;
 	q     = b;
 	e(1)  = -f(1) * q;
-	th    = f(1)*w(1);
-	theta(1) = th;
-	th1 = th;
+	theta(1) = f(1)*w(1);
 
 	% i = 2
 	d = (a + q*e(1));
@@ -111,9 +109,7 @@ function gcv = iterate(sigma)
 	qold = q;
 	q     = b + e(1);
 	e(2)  = -f(2) * q;
-	th = f(2)*(w(2) - qold*th1);
-	theta(2) = th;
-	th2 = th1; th1 = th;
+	theta(2) = f(2)*(w(2) - qold*theta(1));
 
 	%% Full loop primed from unrolled values
 	for i = 3:Nlim
@@ -122,16 +118,12 @@ function gcv = iterate(sigma)
 		qold = q;
 		q     = b + e(i-1);
 		e(i)  = -f(i) * q;
-		th = f(i)*(w(i) - th2 - qold*th1);
-		theta(i) = th;
-		th2 = th1; th1 = th;
+		theta(i) = f(i)*(w(i) - theta(i-2) - qold*theta(i-1));
 	end
 
 	q = b + e(Nlim);
 	for i = (Nlim+1):Nw
-		th = f(Nlim)*(w(i) - th2 - q*th1);
-		theta(i) = th;
-		th2 = th1; th1 = th;
+		theta(i) = f(Nlim)*(w(i) - theta(i-2) - q*theta(i-1));
 	end
 
 	%% BACKWARD LOOP:
@@ -166,7 +158,6 @@ function gcv = iterate(sigma)
 	else
 		g = f(i);
 	end
-	h = 0;
 	q = 0;
 
 	tr = tr + 6*g;
@@ -177,7 +168,6 @@ function gcv = iterate(sigma)
 
 	% 2.
 	i = Nw-1;
-	q(i) = 0;
 	if i >= Nlim
 		c = theta(i) + e(Nlim) * c1;
 		h = e(Nlim) * g1;
