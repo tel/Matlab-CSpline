@@ -229,27 +229,28 @@ function gcv = iterate(sigma)
 		h1 = h;
 	end
 
-	% Finish computing Mtc
+	%% Finish computing Mtc
+	%  (note that the previous c value, colloqially `c1`, is stored in Mtc(i+1)
+	%  and so we'll just use the value from there
 	Nback_lim2 = min([Nlim, Nback]);
 	for i = Nback:-1:(Nback_lim2+1)
-		c = theta(i) + e(Nlim) * c1 - f(Nlim) * c2;
+		c = theta(i) + e(Nlim) * Mtc(i+1) - f(Nlim) * c2;
+		c2 = Mtc(i+1);
 		Mtc(i+2) = Mtc(i+2) + c;
 		Mtc(i+1) = Mtc(i+1) - 2*c;
 		Mtc(i)   = c;
 
 		num = num + Mtc(i+2)^2;
-
-		c2 = c1; c1 = c;
 	end
 	for i = Nback_lim2:-1:1
-		c = theta(i) + e(i) * c1 - f(i) * c2;
+		c = theta(i) + e(i) * Mtc(i+1) - f(i) * c2;
+		c2 = Mtc(i+1);
 		Mtc(i+2) = Mtc(i+2) + c;
 		Mtc(i+1) = Mtc(i+1) - 2*c;
 		Mtc(i)   = c;
 
 		num = num + Mtc(i+2)^2;
 
-		c2 = c1; c1 = c;
 	end
 
 	%% Finalize GCV
