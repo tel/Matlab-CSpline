@@ -158,7 +158,6 @@ function gcv = iterate(sigma)
 	else
 		g = f(i);
 	end
-	q = 0;
 
 	tr = tr + 6*g;
 	num = num + Mtc(i+2)^2;
