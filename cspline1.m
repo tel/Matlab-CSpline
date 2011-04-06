@@ -27,7 +27,7 @@ function [Mtc, lambda] = cspline1(y)
 	NARRS = 5;
 	Nalloca0 = floor((CACHE*RESIDE/BYTESIZE - Nw)/NARRS);
 	if Nalloca0 < 100
-		Nalloca0 = 100;
+		Nalloca0 = 20;
 	end
 
 	%% Runtime flags.
@@ -47,6 +47,9 @@ function [Mtc, lambda] = cspline1(y)
 	opts   = optimset('TolX', 1e-16, 'Display', 'on');
 	sigma  = fminbnd(@iterate, 0, 1);
 	lambda = sigma^2/(1-sigma^2);
+
+	%sigma = 6.2522e-05;
+	%gcv = iterate(sigma);
 	
 	%% Store the output in c and return
 	Mtc = y - Mtc;
@@ -195,7 +198,7 @@ function gcv = iterate(sigma)
 	c2 = c1; c1 = c;
 	g2 = g1; g1 = g;
 	h1 = h;
-	
+
 	% Real loop, above the limit
 	Nback_lim = min([Nw-2, max([Nlim, Nback])]);
 	for i = (Nw-2):-1:(Nback_lim+1)
@@ -216,7 +219,6 @@ function gcv = iterate(sigma)
 		g2 = g1; g1 = g;
 		h1 = h;
 	end
-
 	% Under the limit
 	for i = Nback_lim:-1:(Nback+1)
 		c = theta(i) + e(i) * c1 - f(i) * c2;
@@ -261,32 +263,49 @@ function gcv = iterate(sigma)
 	end
 
 	%% Finalize GCV
-	
-	% Multiply in the requisite number of limit values
+
+	%% Multiply in the requisite number of limit values
 	tr = tr + gcvinc * (Nback - Nmid);
-	if Nodd
-		% Compute one more value. This will be the limit again if we've
-		% reached it.
+	
+	%% Complete the sequences, note that they are RAGGED
+	%  Compute one more value. This will be the limit again if we've
+	%  reached it.
+	i = Nmid-1;
+	if i > Nlim
+		q = e(Nlim) * h1 - f(Nlim) * g2;
+		h = e(Nlim) * g1 - f(Nlim) * h1;
+		g = f(Nlim) * (1 - q) + e(Nlim) * h;
+	else
 		q = e(i) * h1 - f(i) * g2;
 		h = e(i) * g1 - f(i) * h1;
 		g = f(i) * (1 - q) + e(i) * h;
-
-		gcvinc = 6*g - 8*h + 2*q;
-		tr = tr*2 + gcvinc;
+	end
+	if Nodd
+		tr = tr - 8*h + 2*q;
+		tr = tr*2;
+		tr = tr + 6*g;
+		% Compute one more q value
+		i = Nmid-2;
+		if i > Nlim
+			q = e(Nlim) * h1 - f(Nlim) * g2;
+		else
+			q = e(i) * h1 - f(i) * g2;
+		end
+		tr = tr + 2*q;
 	else
-		% It's just doubled by persymmetry
+		tr = tr - 4*h + 2*q;
 		tr = tr*2;
 	end
 
 	% We also need to add the first two Mtc values which aren't reached in the
 	% main loops
 	num = num + Mtc(2)^2 + Mtc(1)^2;
-	
+
 	% Return the GCV
 	gcv = Ny * num / tr^2;
 
 end
-	
+
 function n = Nconverge(lambda)
 	% Determine the necessary upper bound of iterations required 
 	if lambda > 100
@@ -300,7 +319,7 @@ end
 function yn = giveupp(n, l)
 	% Estimate the condition of matrix A from N and lambda then emit a warning
 	% if we're past numerical precision.
-	
+
 	% Compute an estimate of the upper bound of the log condition of A
 	llam = log(l);
 	ln = log(n);
