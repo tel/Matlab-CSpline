@@ -121,9 +121,12 @@ function gcv = iterate(sigma)
 		theta(i) = f(i)*(w(i) - theta(i-2) - qold*theta(i-1));
 	end
 
-	q = b + e(Nlim);
+	%$ Store the limit values
+	elim = e(Nlim); flim = f(Nlim);
+
+	q = b + elim;
 	for i = (Nlim+1):Nw
-		theta(i) = f(Nlim)*(w(i) - theta(i-2) - q*theta(i-1));
+		theta(i) = flim*(w(i) - theta(i-2) - q*theta(i-1));
 	end
 
 	%% BACKWARD LOOP:
@@ -154,7 +157,7 @@ function gcv = iterate(sigma)
 	Mtc(i+1) = -2*c;
 	Mtc(i)   = c;
 	if i >= Nlim
-		g = f(Nlim);
+		g = flim;
 	else
 		g = f(i);
 	end
@@ -168,9 +171,9 @@ function gcv = iterate(sigma)
 	% 2.
 	i = Nw-1;
 	if i >= Nlim
-		c = theta(i) + e(Nlim) * c1;
-		h = e(Nlim) * g1;
-		g = f(Nlim) + e(Nlim) * h;
+		c = theta(i) + elim * c1;
+		h = elim * g1;
+		g = flim + elim * h;
 	else
 		c = theta(i) + e(i) * c1;
 		h = e(i) * g1;
@@ -191,14 +194,14 @@ function gcv = iterate(sigma)
 	% Real loop, above the limit
 	Nback_lim = min([Nw-2, max([Nlim, Nback])]);
 	for i = (Nw-2):-1:(Nback_lim+1)
-		c = theta(i) + e(Nlim) * c1 - f(Nlim) * c2;
+		c = theta(i) + elim * c1 - flim * c2;
 		Mtc(i+2) = Mtc(i+2) + c;
 		Mtc(i+1) = Mtc(i+1) - 2*c;
 		Mtc(i)   = c;
 
-		q = e(Nlim) * h1 - f(Nlim) * g2;
-		h = e(Nlim) * g1 - f(Nlim) * h1;
-		g = f(Nlim) * (1 - q) + e(Nlim) * h;
+		q = elim * h1 - flim * g2;
+		h = elim * g1 - flim * h1;
+		g = flim * (1 - q) + elim * h;
 
 		gcvinc = 6*g - 8*h + 2*q;
 		tr = tr + gcvinc;
@@ -233,7 +236,7 @@ function gcv = iterate(sigma)
 	%  and so we'll just use the value from there
 	Nback_lim2 = min([Nlim, Nback]);
 	for i = Nback:-1:(Nback_lim2+1)
-		c = theta(i) + e(Nlim) * Mtc(i+1) - f(Nlim) * c2;
+		c = theta(i) + elim * Mtc(i+1) - flim * c2;
 		c2 = Mtc(i+1);
 		Mtc(i+2) = Mtc(i+2) + c;
 		Mtc(i+1) = Mtc(i+1) - 2*c;
@@ -262,9 +265,9 @@ function gcv = iterate(sigma)
 	%  reached it.
 	i = Nmid-1;
 	if i > Nlim
-		q = e(Nlim) * h1 - f(Nlim) * g2;
-		h = e(Nlim) * g1 - f(Nlim) * h1;
-		g = f(Nlim) * (1 - q) + e(Nlim) * h;
+		q = elim * h1 - flim * g2;
+		h = elim * g1 - flim * h1;
+		g = flim * (1 - q) + elim * h;
 	else
 		q = e(i) * h1 - f(i) * g2;
 		h = e(i) * g1 - f(i) * h1;
@@ -277,7 +280,7 @@ function gcv = iterate(sigma)
 		% Compute one more q value
 		i = Nmid-2;
 		if i > Nlim
-			q = e(Nlim) * h1 - f(Nlim) * g2;
+			q = elim * h1 - flim * g2;
 		else
 			q = e(i) * h1 - f(i) * g2;
 		end
