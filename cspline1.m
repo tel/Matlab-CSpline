@@ -35,10 +35,10 @@ function [Mtc, lambda] = cspline1(y)
 
 	%% Preallocate the vectors we need to use.
 	Nalloca = min([Nalloca0, Nw]);
-	f    = zeros(Nalloca, 1);
-	e    = zeros(Nalloca, 1);
-	th   = zeros(Nw, 1);
-	Mtc  = zeros(Ny, 1);
+	f     = zeros(Nalloca, 1);
+	e     = zeros(Nalloca, 1);
+	theta = zeros(Nw, 1);
+	Mtc   = zeros(Ny, 1);
 
 	% Create some endpts for limits of the reconstruction
 	Nlim = Nw;
