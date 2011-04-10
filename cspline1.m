@@ -44,12 +44,9 @@ Mtc   = zeros(Ny, 1);
 Nlim = Nw;
 
 %% Minimize the GCV via lambda
-opts   = optimset('TolX', 1e-16, 'Display', 'on');
+opts   = optimset('Display', 'off', 'TolFun', 1e-16);
 sigma  = fminbnd(@iterate, 0, 1);
 lambda = sigma^2/(1-sigma^2);
-
-%sigma = 6.2522e-05;
-%gcv = iterate(sigma);
 
 %% Store the output in c and return
 Mtc = y - Mtc;
