@@ -51,9 +51,10 @@ zs = sort(roots([1, lambda/6-4, 2/3*lambda+6, lambda/6-4, 1]), 'ascend');
 elim = zs(1) + zs(2);
 flim = zs(1)*zs(2);
 
-glim = flim * (1+flim) / ((1-flim) * ((1+flim)^2 - elim^2));
-hlim = elim * glim / (1 + flim);
-qlim = elim*hlim - flim*glim;
+denom = (1-flim) * ((1+flim)^2 - elim^2);
+glim = flim * (1+flim) / denom;
+hlim = elim * flim / denom;
+qlim = elim * hlim - flim * glim;
 
 trace = 6*glim - 8*hlim + 2*qlim;
 
