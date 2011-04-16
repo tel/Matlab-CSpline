@@ -254,11 +254,12 @@ end
 %% Finalize GCV
 
 %% Multiply in the requisite number of limit values
-tr = tr + gcvinc * (Nback - Nmid);
+tr = tr + gcvinc * (Nback - Nmid + 1);
 
 %% Complete the sequences, note that they are RAGGED
-%  Compute one more value. This will be the limit again if we've
-%  reached it.
+%  Compute one more row. This will be the limit again if we've reached
+%  it. Depending on whether N is odd or even, we'll use these extra
+%  values so as to properly account for persymmetry.
 i = Nmid-1;
 if i > Nlim
     q = elim * h1 - flim * g2;
