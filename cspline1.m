@@ -38,7 +38,6 @@ Nalloca = min([Nalloca0, Nw]);
 f     = zeros(Nalloca, 1);
 e     = zeros(Nalloca, 1);
 theta = zeros(Nw, 1);
-c     = zeros(Nw, 1);
 x     = zeros(Ny, 1);
 
 % Create some endpts for limits of the reconstruction
@@ -128,7 +127,7 @@ for i = (Nlim+1):Nw
 end
 
 %% BACKWARD LOOP:
-%% Compute the c sequence and the GCV value
+%% Compute the c sequence (named theta here) and the GCV value
 %  Note that this loop must traverse several critical points.
 %  1. Persymmetry: we only need to compute up to the middle for the GCV
 %  2. Limiting: g, h, and q values converge at the same rate as the es and fs
@@ -149,7 +148,7 @@ tr = 0;
 %% Unroll the first few iterations for the zeros
 % 1.
 i = Nw;
-c(i) = theta(i);
+theta(i) = theta(i);
 if i >= Nlim
     g = flim;
 else
@@ -163,11 +162,11 @@ g1 = g;
 % 2.
 i = Nw-1;
 if i >= Nlim
-    c(i) = theta(i) + elim * c(i+1);
+    theta(i) = theta(i) + elim * theta(i+1);
     h = elim * g1;
     g = flim + elim * h;
 else
-    c(i) = theta(i) + e(i) * c(i+1);
+    theta(i) = theta(i) + e(i) * theta(i+1);
     h = e(i) * g1;
     g = f(i) + e(i) * h;
 end
@@ -180,7 +179,7 @@ h1 = h;
 % Real loop, above the limit
 Nback_lim = min([Nw-2, max([Nlim, Nback])]);
 for i = (Nw-2):-1:(Nback_lim+1)
-    c(i) = theta(i) + elim * c(i+1) - flim * c(i+2);
+    theta(i) = theta(i) + elim * theta(i+1) - flim * theta(i+2);
     
     q = elim * h1 - flim * g2;
     h = elim * g1 - flim * h1;
@@ -195,7 +194,7 @@ end
 
 % Under the limit
 for i = Nback_lim:-1:(Nback+1)
-    c(i) = theta(i) + e(i) * c(i+1) - f(i) * c(i+2);
+    theta(i) = theta(i) + e(i) * theta(i+1) - f(i) * theta(i+2);
     
     q = e(i) * h1 - f(i) * g2;
     h = e(i) * g1 - f(i) * h1;
@@ -208,13 +207,13 @@ for i = Nback_lim:-1:(Nback+1)
     h1 = h;
 end
 
-%% Finish computing Mtc
+%% Finish computing c (named theta)
 Nback_lim2 = min([Nlim, Nback]);
 for i = Nback:-1:(Nback_lim2+1)
-    c(i) = theta(i) + elim * c(i+1) - flim * c(i+2);
+    theta(i) = theta(i) + elim * theta(i+1) - flim * theta(i+2);
 end
 for i = Nback_lim2:-1:1
-    c(i) = theta(i) + e(i) * c(i+1) - f(i) * c(i+2);
+    theta(i) = theta(i) + e(i) * theta(i+1) - f(i) * theta(i+2);
 end
 
 %% Finalize GCV
@@ -254,11 +253,11 @@ else
 end
 
 % Compute Mtc from c, store it in x
-x(3:(end-2)) = diff(c, 2);
-x(1) = c(1);
-x(2) = -2*c(1) + c(2);
-x(end) = c(end);
-x(end-1) = -2*c(end) + c(end-1);
+x(3:(end-2)) = diff(theta, 2);
+x(1) = theta(1);
+x(2) = -2*theta(1) + theta(2);
+x(end) = theta(end);
+x(end-1) = -2*theta(end) + theta(end-1);
 num = sum(x.^2);
 
 % Return the GCV
