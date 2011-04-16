@@ -72,21 +72,20 @@ if Neven
     % 2:(Nfft/2) are repeated. The 1st and (Nfft/2+1)th elements
     % have to be added in later, although the 1st is multiplied by
     % 0 in the (1-H) term.
-    e = sum(abs(Y(2:Nfft2) .* (1 - lambda * Hcos2(1:(end-1)) ./ ...
-                               (Hcos1(1:(end-1)) + lambda * ...
-                                Hcos2(1:(end-1))))).^2);
+    e = 2*sum(abs(Y(2:Nfft2) .* (1 - lambda * Hcos2(1:(end-1)) ./ ...
+                                 (Hcos1(1:(end-1)) + lambda * ...
+                                  Hcos2(1:(end-1))))).^2);
     e = e + abs(Y(Nfft2+1) * (1 - lambda/(48 + lambda)))^2;
 else
     % When odd, the (Nfft-1)/2 middle elements, designated
     % 2:((Nfft-1)/2+1) are repeated and ONLY the 1st element needs
     % to be added in later.
-    e = sum(abs(Y(2:(Nfft2+1)) .* ...
-                (1 - lambda * Hcos2 ./ ...
-                 (Hcos1 + lambda * Hcos2))).^2) * 2;
-    e = e;
+    e = 2*sum(abs(Y(2:(Nfft2+1)) .* ...
+                  (1 - lambda * Hcos2 ./ ...
+                   (Hcos1 + lambda * Hcos2))).^2) * 2;
 end
 
-gcv = e/trace^2;
+gcv = e/Ny/trace^2;
 end
 
 end
