@@ -44,7 +44,7 @@ x     = zeros(Ny, 1);
 Nlim = Nw;
 
 %% Minimize the GCV via lambda
-opts   = optimset('Display', 'off', 'TolFun', 1e-16);
+opts   = optimset('Display', 'off');
 sigma  = fminbnd(@iterate, 0, 1);
 lambda = sigma^2/(1-sigma^2);
 
