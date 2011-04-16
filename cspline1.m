@@ -1,4 +1,4 @@
-function [Mtc, lambda] = cspline1(y)
+function [x, lambda] = cspline1(y)
 
 %% Constants storing the numerical parameters we're working with.
 %  (precision defines the maximal roundoff error as 2^-PRECISION, bytesize
@@ -38,7 +38,8 @@ Nalloca = min([Nalloca0, Nw]);
 f     = zeros(Nalloca, 1);
 e     = zeros(Nalloca, 1);
 theta = zeros(Nw, 1);
-Mtc   = zeros(Ny, 1);
+c     = zeros(Nw, 1);
+x     = zeros(Ny, 1);
 
 % Create some endpts for limits of the reconstruction
 Nlim = Nw;
@@ -49,11 +50,11 @@ sigma  = fminbnd(@iterate, 0, 1);
 lambda = sigma^2/(1-sigma^2);
 
 %% Store the output in c and return
-Mtc = y - Mtc;
+x = y - x;
 
 function gcv = iterate(sigma)
 % A single iteration of the smoothing process, computed over the global
-% variables w, e, f, th, and Mtc. Returns the GCV score for this choice of
+% variables w, e, f, th, and x. Returns the GCV score for this choice of
 % lambda.
     
 %% Decompress lambda.
@@ -127,7 +128,7 @@ for i = (Nlim+1):Nw
 end
 
 %% BACKWARD LOOP:
-%% Compute the c -> Mtc sequence and the GCV value
+%% Compute the c sequence and the GCV value
 %  Note that this loop must traverse several critical points.
 %  1. Persymmetry: we only need to compute up to the middle for the GCV
 %  2. Limiting: g, h, and q values converge at the same rate as the es and fs
@@ -142,17 +143,13 @@ end
 Nlim_b = Nw-Nlim+1;
 Nback = max([Nmid, Nlim_b]);
 
-% inits
+% init
 tr = 0;
-num = 0;
 
 %% Unroll the first few iterations for the zeros
 % 1.
 i = Nw;
-c = theta(i);
-Mtc(i+2) = c;
-Mtc(i+1) = -2*c;
-Mtc(i)   = c;
+c(i) = theta(i);
 if i >= Nlim
     g = flim;
 else
@@ -160,41 +157,30 @@ else
 end
 
 tr = tr + 6*g;
-num = num + Mtc(i+2)^2;
 
-c1 = c;
 g1 = g;
 
 % 2.
 i = Nw-1;
 if i >= Nlim
-    c = theta(i) + elim * c1;
+    c(i) = theta(i) + elim * c(i+1);
     h = elim * g1;
     g = flim + elim * h;
 else
-    c = theta(i) + e(i) * c1;
+    c(i) = theta(i) + e(i) * c(i+1);
     h = e(i) * g1;
     g = f(i) + e(i) * h;
 end
 
-Mtc(i+2) = Mtc(i+2) + c;
-Mtc(i+1) = Mtc(i+1) - 2*c;
-Mtc(i)   = c;
-
 tr = tr + 6*g - 8*h;
-num = num + Mtc(i+2)^2;
 
-c2 = c1; c1 = c;
 g2 = g1; g1 = g;
 h1 = h;
 
 % Real loop, above the limit
 Nback_lim = min([Nw-2, max([Nlim, Nback])]);
 for i = (Nw-2):-1:(Nback_lim+1)
-    c = theta(i) + elim * c1 - flim * c2;
-    Mtc(i+2) = Mtc(i+2) + c;
-    Mtc(i+1) = Mtc(i+1) - 2*c;
-    Mtc(i)   = c;
+    c(i) = theta(i) + elim * c(i+1) - flim * c(i+2);
     
     q = elim * h1 - flim * g2;
     h = elim * g1 - flim * h1;
@@ -202,18 +188,14 @@ for i = (Nw-2):-1:(Nback_lim+1)
     
     gcvinc = 6*g - 8*h + 2*q;
     tr = tr + gcvinc;
-    num = num + Mtc(i+2)^2;
     
-    c2 = c1; c1 = c;
     g2 = g1; g1 = g;
     h1 = h;
 end
+
 % Under the limit
 for i = Nback_lim:-1:(Nback+1)
-    c = theta(i) + e(i) * c1 - f(i) * c2;
-    Mtc(i+2) = Mtc(i+2) + c;
-    Mtc(i+1) = Mtc(i+1) - 2*c;
-    Mtc(i)   = c;
+    c(i) = theta(i) + e(i) * c(i+1) - f(i) * c(i+2);
     
     q = e(i) * h1 - f(i) * g2;
     h = e(i) * g1 - f(i) * h1;
@@ -221,34 +203,18 @@ for i = Nback_lim:-1:(Nback+1)
     
     gcvinc = 6*g - 8*h + 2*q;
     tr = tr + gcvinc;
-    num = num + Mtc(i+2)^2;
     
-    c2 = c1; c1 = c;
     g2 = g1; g1 = g;
     h1 = h;
 end
 
 %% Finish computing Mtc
-%  (note that the previous c value, colloqially `c1`, is stored in Mtc(i+1)
-%  and so we'll just use the value from there
 Nback_lim2 = min([Nlim, Nback]);
 for i = Nback:-1:(Nback_lim2+1)
-    c = theta(i) + elim * Mtc(i+1) - flim * c2;
-    c2 = Mtc(i+1);
-    Mtc(i+2) = Mtc(i+2) + c;
-    Mtc(i+1) = Mtc(i+1) - 2*c;
-    Mtc(i)   = c;
-    
-    num = num + Mtc(i+2)^2;
+    c(i) = theta(i) + elim * c(i+1) - flim * c(i+2);
 end
 for i = Nback_lim2:-1:1
-    c = theta(i) + e(i) * Mtc(i+1) - f(i) * c2;
-    c2 = Mtc(i+1);
-    Mtc(i+2) = Mtc(i+2) + c;
-    Mtc(i+1) = Mtc(i+1) - 2*c;
-    Mtc(i)   = c;
-    
-    num = num + Mtc(i+2)^2;    
+    c(i) = theta(i) + e(i) * c(i+1) - f(i) * c(i+2);
 end
 
 %% Finalize GCV
@@ -287,9 +253,13 @@ else
     tr = tr*2;
 end
 
-% We also need to add the first two Mtc values which aren't reached in the
-% main loops
-num = num + Mtc(2)^2 + Mtc(1)^2;
+% Compute Mtc from c, store it in x
+x(3:(end-2)) = diff(c, 2);
+x(1) = c(1);
+x(2) = -2*c(1) + c(2);
+x(end) = c(end);
+x(end-1) = -2*c(end) + c(end-1);
+num = sum(x.^2);
 
 % Return the GCV
 gcv = Ny * num / tr^2;
