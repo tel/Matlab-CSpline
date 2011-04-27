@@ -1,4 +1,4 @@
-function [x, lambda] = cspline1(y)
+function [x, lambda] = cspline1(y, lambda)
 
 %% Constants storing the numerical parameters we're working with.
 %  (precision defines the maximal roundoff error as 2^-PRECISION, bytesize
@@ -43,10 +43,15 @@ x     = zeros(Ny, 1);
 % Create some endpts for limits of the reconstruction
 Nlim = Nw;
 
-%% Minimize the GCV via lambda
-opts   = optimset('Display', 'off');
-sigma  = fminbnd(@iterate, 0, 1);
-lambda = sigma^2/(1-sigma^2);
+if nargin == 1
+    %% Minimize the GCV via lambda
+    opts   = optimset('Display', 'off');
+    sigma  = fminbnd(@iterate, 0, 1);
+    lambda = sigma^2/(1-sigma^2);
+else
+    sigma = sqrt(lambda/(1+lambda));
+    gcv = iterate(sigma);
+end
 
 %% Store the output in c and return
 x = y - x;

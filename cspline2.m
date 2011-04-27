@@ -20,10 +20,50 @@ w = (1:Nfft2)/Nfft2 * pi;
 Hcos2 = 2 + cos(w);
 Hcos1 = 12*(1 - cos(w)).^2;
 
+% Create a chart of the minimization process
+gcvs = [];
+nums = [];
+traces = [];
+deq = 1e-6;
+edge = 1;
+sigmas = linspace(-10, 10, 100);
+sigmas = 10.^sigmas;
+sigmas = sqrt(sigmas./(1+sigmas));
+for sigma = sigmas
+    [gcv, num, trace] = iterate(sigma);
+    gcvs = [gcvs gcv];
+    nums = [nums num];
+    traces = [traces trace];
+end
+
+sigmas  = log10(sigmas.^2./(1-sigmas.^2));
+lgcvs = min(gcvs);
+gcvs = gcvs-lgcvs;
+tgcvs = max(gcvs);
+gcvs = gcvs/tgcvs;
+nums = nums-min(nums);
+nums = nums/max(nums);
+traces = log10(traces.^(-2));
+traces = traces-min(traces);
+traces = traces/max(traces);
+
+clf()
+plot(sigmas, gcvs, 'k-')
+hold on
+plot(sigmas, nums, 'r-')
+plot(sigmas, traces, 'b-')
+
 %% Minimize the GCV via lambda
 opts   = optimset('Display', 'off');
 sigma  = fminbnd(@iterate, 0, 1);
 lambda = sigma^2/(1-sigma^2);
+gcv    = iterate(sigma);
+hSigma = line(log10(lambda), (gcv-lgcvs)/tgcvs);
+set(hSigma                        , ...
+  'Marker'          , 'o'         , ...
+  'MarkerSize'      , 10          , ...
+  'MarkerEdgeColor' , 'none'      , ...
+  'MarkerFaceColor' , [0, 0, 0] );
 
 %% Compute the final Y
 if Neven
@@ -40,14 +80,18 @@ end
 x = ifft(conj(Y));
 
 
-function gcv = iterate(sigma)
+function [gcv, e, trace] = iterate(sigma)
 
 %% Decompress lambda
 lambda = sigma^2/(1-sigma^2);
 
 
-%% Compute the steady-state trace
-zs = sort(roots([1, lambda/6-4, 2/3*lambda+6, lambda/6-4, 1]), 'ascend');
+%% Compute the steady-state trace. Note that the roots DO need to
+%% be sorted by magnitude in order to ensure the first two are
+%% inside the unit circle.
+zs = roots([1, lambda/6-4, 2/3*lambda+6, lambda/6-4, 1]);
+[~, idx] = sort(abs(zs), 'ascend');
+zs = zs(idx);
 elim = zs(1) + zs(2);
 flim = zs(1)*zs(2);
 
